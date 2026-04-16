@@ -1,0 +1,20 @@
+{
+    "name": "ChessGame.Editor",
+    "rootNamespace": "ChessGame.Editor",
+    "references": [
+        "ChessGame.Core",
+        "ChessGame.Gameplay",
+        "ChessGame.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
