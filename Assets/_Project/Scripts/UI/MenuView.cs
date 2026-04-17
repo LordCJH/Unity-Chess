@@ -61,7 +61,7 @@ namespace ChessGame.UI
             rect.anchoredPosition = new Vector2(0, 100);
             rect.sizeDelta = new Vector2(400, 60);
             var txt = go.AddComponent<Text>();
-            txt.text = "中国象棋 - 选择难度";
+            txt.text = "街头象棋对战";
             txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             txt.fontSize = 32;
             txt.alignment = TextAnchor.MiddleCenter;
@@ -70,7 +70,7 @@ namespace ChessGame.UI
 
         private void CreateDifficultyButtons(GameObject panel)
         {
-            string[] labels = { "简单", "普通", "困难" };
+            string[] labels = { "路人水准", "高手大爷", "街头棋圣" };
             _difficultyButtons = new Button[3];
             _difficultyImages = new Image[3];
 
@@ -95,7 +95,7 @@ namespace ChessGame.UI
 
         private void CreateStartButton(GameObject panel)
         {
-            var go = CreateButton(panel.transform, "开始游戏", new Vector2(0, -60), new Vector2(150, 45), new Color(0.2f, 0.7f, 0.3f), 22);
+            var go = CreateButton(panel.transform, "开始对战", new Vector2(0, -60), new Vector2(150, 45), new Color(0.2f, 0.7f, 0.3f), 22);
             go.GetComponent<Button>().onClick.AddListener(() =>
             {
                 AIDifficulty diff = _selectedIndex switch
@@ -111,7 +111,7 @@ namespace ChessGame.UI
 
         private void CreateQuitButton(GameObject panel)
         {
-            var go = CreateButton(panel.transform, "退出游戏", new Vector2(0, -120), new Vector2(150, 40), new Color(0.7f, 0.2f, 0.2f), 20);
+            var go = CreateButton(panel.transform, "离开棋桌", new Vector2(0, -120), new Vector2(150, 40), new Color(0.7f, 0.2f, 0.2f), 20);
             go.GetComponent<Button>().onClick.AddListener(() => OnQuitClicked?.Invoke());
         }
 

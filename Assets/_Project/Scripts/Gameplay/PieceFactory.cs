@@ -6,7 +6,7 @@ namespace ChessGame.Gameplay
 {
     public class PieceFactory : MonoBehaviour
     {
-        [SerializeField] private float _pieceScale = 0.75f;
+        [SerializeField] private float _pieceScale = 1.0f;
         [SerializeField] private Sprite[] _assignedSprites = new Sprite[14];
 
         private readonly Sprite[] _pieceSprites = new Sprite[14];
