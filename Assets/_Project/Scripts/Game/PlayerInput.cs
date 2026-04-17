@@ -68,11 +68,18 @@ namespace ChessGame.Input
                 return false;
 
             Rect rect = _boardRect.rect;
-            if (!rect.Contains(localPoint))
-                return false;
-
             float cellWidth = rect.width / 8f;
             float cellHeight = rect.height / 9f;
+            var hitRect = new Rect(
+                rect.xMin - cellWidth * 0.5f,
+                rect.yMin - cellHeight * 0.5f,
+                rect.width + cellWidth,
+                rect.height + cellHeight);
+            if (!hitRect.Contains(localPoint))
+                return false;
+
+            localPoint.x = Mathf.Clamp(localPoint.x, rect.xMin, rect.xMax);
+            localPoint.y = Mathf.Clamp(localPoint.y, rect.yMin, rect.yMax);
             boardX = Mathf.RoundToInt(localPoint.x / cellWidth + 4f);
             boardY = Mathf.RoundToInt(localPoint.y / cellHeight + 4.5f);
             return boardX >= 0 && boardX <= 8 && boardY >= 0 && boardY <= 9;
