@@ -581,6 +581,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 0f74772f11f1f2d5494944fe1deca21e, type: 3}
   - {fileID: 21300000, guid: f63988bf2f60fab03a1bb2b3f5ef8d8a, type: 3}
   - {fileID: 21300000, guid: 3cd5a29a06808dc8b99c7f742bbdc10f, type: 3}
+  Border1: {fileID: 21300000, guid: 8e04917ddbcc183418c3461191d8fa8d, type: 3}
+  Border2: {fileID: 21300000, guid: aeceb5ea77bd42a4696f09011e7d3534, type: 3}
 --- !u!1 &1608829068
 GameObject:
   m_ObjectHideFlags: 0

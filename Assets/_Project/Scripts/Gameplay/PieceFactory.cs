@@ -9,6 +9,9 @@ namespace ChessGame.Gameplay
         [SerializeField] private float _pieceScale = 1.0f;
         [SerializeField] private Sprite[] _assignedSprites = new Sprite[14];
 
+        public Sprite Border1;
+        public Sprite Border2;
+
         private readonly Sprite[] _pieceSprites = new Sprite[14];
         private bool _spritesLoaded;
         private RectTransform _boardRoot;
@@ -56,8 +59,13 @@ namespace ChessGame.Gameplay
                 rectTransform.SetParent(_boardRoot, false);
 
             var piece = go.GetComponent<Piece>();
-            piece.Setup(type, side, x, y, GetSprite(side, type), _pieceScale);
+            piece.Setup(type, side, x, y, GetSprite(side, type), _pieceScale, GetBorder(side));
             return piece;
+        }
+
+        private Sprite GetBorder(GameSide side)
+        {
+            return side == GameSide.Red ? Border2 : Border1;
         }
     }
 }

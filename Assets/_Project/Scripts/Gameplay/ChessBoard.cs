@@ -8,6 +8,7 @@ namespace ChessGame.Gameplay
     {
         private readonly Piece[,] _pieces = new Piece[9, 10];
         private PieceFactory _pieceFactory;
+        private Piece _lastMoved;
 
         public void Initialize(PieceFactory factory)
         {
@@ -24,6 +25,7 @@ namespace ChessGame.Gameplay
         public void ClearBoard()
         {
             ClearPieces();
+            _lastMoved = null;
         }
 
         public void SpawnAllPieces()
@@ -49,7 +51,6 @@ namespace ChessGame.Gameplay
 
         private void SpawnAll()
         {
-            // Red side (bottom)
             Spawn(PieceType.Chariot, GameSide.Red, 0, 0);
             Spawn(PieceType.Horse, GameSide.Red, 1, 0);
             Spawn(PieceType.Elephant, GameSide.Red, 2, 0);
@@ -64,7 +65,6 @@ namespace ChessGame.Gameplay
             for (int i = 0; i < 5; i++)
                 Spawn(PieceType.Soldier, GameSide.Red, i * 2, 3);
 
-            // Black side (top)
             Spawn(PieceType.Chariot, GameSide.Black, 0, 9);
             Spawn(PieceType.Horse, GameSide.Black, 1, 9);
             Spawn(PieceType.Elephant, GameSide.Black, 2, 9);
@@ -108,6 +108,16 @@ namespace ChessGame.Gameplay
             piece.BoardX = toX;
             piece.BoardY = toY;
             piece.UpdatePosition();
+            UpdateMoveBorder(piece);
+        }
+
+        private void UpdateMoveBorder(Piece piece)
+        {
+            if (_lastMoved != null && _lastMoved != piece)
+                _lastMoved.SetMoveBorder(false);
+
+            piece.SetMoveBorder(true);
+            _lastMoved = piece;
         }
 
         public List<ChessMove> GetAllValidMoves(GameSide side)

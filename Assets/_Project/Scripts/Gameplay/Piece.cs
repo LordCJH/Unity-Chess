@@ -15,7 +15,9 @@ namespace ChessGame.Gameplay
         public bool IsAlive { get; set; } = true;
 
         private Image _image;
-        private RectTransform _rectTransform;
+        private RectTransform _rect;
+        private Image _moveBorder;
+        private Sprite _moveBorderSprite;
         private float _scale;
         private static readonly Color HighlightColor = new Color(0.4f, 0.9f, 0.4f);
         private static readonly Color NormalColor = Color.white;
@@ -30,17 +32,17 @@ namespace ChessGame.Gameplay
             }
         }
 
-        private RectTransform PieceRectTransform
+        private RectTransform PieceRect
         {
             get
             {
-                if (_rectTransform == null)
-                    _rectTransform = GetComponent<RectTransform>();
-                return _rectTransform;
+                if (_rect == null)
+                    _rect = GetComponent<RectTransform>();
+                return _rect;
             }
         }
 
-        public void Setup(PieceType type, GameSide side, int x, int y, Sprite sprite, float scale)
+        public void Setup(PieceType type, GameSide side, int x, int y, Sprite sprite, float scale, Sprite moveBorderSprite)
         {
             Type = type;
             Side = side;
@@ -48,6 +50,7 @@ namespace ChessGame.Gameplay
             BoardY = y;
             IsAlive = true;
             _scale = scale;
+            _moveBorderSprite = moveBorderSprite;
             name = $"{side}_{type}_{x}_{y}";
 
             PieceImage.sprite = sprite;
@@ -57,17 +60,15 @@ namespace ChessGame.Gameplay
 
             SetSize(scale);
             UpdatePosition();
+            SetMoveBorder(false);
         }
 
         public void UpdatePosition()
         {
-            var boardRect = transform.parent as RectTransform;
-            if (boardRect == null)
-                return;
-
+            var boardRect = (RectTransform)transform.parent;
             float cellWidth = boardRect.rect.width / 8f;
             float cellHeight = boardRect.rect.height / 9f;
-            PieceRectTransform.anchoredPosition = new Vector2(
+            PieceRect.anchoredPosition = new Vector2(
                 (BoardX - 4f) * cellWidth,
                 (BoardY - 4.5f) * cellHeight);
         }
@@ -83,16 +84,47 @@ namespace ChessGame.Gameplay
             UpdatePosition();
         }
 
+        public void SetMoveBorder(bool visible)
+        {
+            if (!visible)
+            {
+                if (_moveBorder != null)
+                    _moveBorder.enabled = false;
+                return;
+            }
+
+            EnsureMoveBorder().enabled = true;
+        }
+
+        private Image EnsureMoveBorder()
+        {
+            if (_moveBorder != null)
+                return _moveBorder;
+
+            var go = new GameObject("MoveBorder", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(transform, false);
+            go.transform.SetAsFirstSibling();
+
+            _moveBorder = go.GetComponent<Image>();
+            _moveBorder.sprite = _moveBorderSprite;
+            _moveBorder.raycastTarget = false;
+            _moveBorder.enabled = false;
+
+            var rect = _moveBorder.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            return _moveBorder;
+        }
+
         private void SetSize(float scale)
         {
-            var boardRect = transform.parent as RectTransform;
-            if (boardRect == null)
-                return;
-
+            var boardRect = (RectTransform)transform.parent;
             float cellWidth = boardRect.rect.width / 8f;
             float cellHeight = boardRect.rect.height / 9f;
             float pieceSize = Mathf.Min(cellWidth, cellHeight) * scale;
-            PieceRectTransform.sizeDelta = new Vector2(pieceSize, pieceSize);
+            PieceRect.sizeDelta = new Vector2(pieceSize, pieceSize);
         }
     }
 }
