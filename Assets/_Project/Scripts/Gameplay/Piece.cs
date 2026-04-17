@@ -16,6 +16,7 @@ namespace ChessGame.Gameplay
 
         private Image _image;
         private RectTransform _rectTransform;
+        private float _scale;
         private static readonly Color HighlightColor = new Color(0.4f, 0.9f, 0.4f);
         private static readonly Color NormalColor = Color.white;
 
@@ -46,6 +47,7 @@ namespace ChessGame.Gameplay
             BoardX = x;
             BoardY = y;
             IsAlive = true;
+            _scale = scale;
             name = $"{side}_{type}_{x}_{y}";
 
             PieceImage.sprite = sprite;
@@ -73,6 +75,12 @@ namespace ChessGame.Gameplay
         public void SetHighlight(bool highlight)
         {
             PieceImage.color = highlight ? HighlightColor : NormalColor;
+        }
+
+        public void RefreshLayout()
+        {
+            SetSize(_scale);
+            UpdatePosition();
         }
 
         private void SetSize(float scale)

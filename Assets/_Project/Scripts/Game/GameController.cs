@@ -5,6 +5,7 @@ using ChessGame.Gameplay;
 using ChessGame.UI;
 using ChessGame.Input;
 using ChessGame.AI;
+using UnityEngine.Rendering;
 
 namespace ChessGame.Game
 {
@@ -51,6 +52,7 @@ namespace ChessGame.Game
             ShowMenu();
             _playerInput.InputEnabled = false;
         }
+
 
         private void SetupCamera()
         {
