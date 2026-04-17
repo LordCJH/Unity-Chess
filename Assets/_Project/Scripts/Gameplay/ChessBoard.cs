@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ChessGame.Core;
+using System.Linq;
 
 namespace ChessGame.Gameplay
 {
@@ -31,6 +32,7 @@ namespace ChessGame.Gameplay
         public void SpawnAllPieces()
         {
             SpawnAll();
+            SortPieces();
         }
 
         private void ClearPieces()
@@ -109,6 +111,7 @@ namespace ChessGame.Gameplay
             piece.BoardY = toY;
             piece.UpdatePosition();
             UpdateMoveBorder(piece);
+            SortPieces();
         }
 
         private void UpdateMoveBorder(Piece piece)
@@ -118,6 +121,17 @@ namespace ChessGame.Gameplay
 
             piece.SetMoveBorder(true);
             _lastMoved = piece;
+        }
+
+        private void SortPieces()
+        {
+            var pieces = _pieces.Cast<Piece>()
+                .Where(piece => piece != null && piece.IsAlive)
+                .OrderByDescending(piece => piece.BoardY)
+                .ThenBy(piece => piece.BoardX);
+
+            foreach (var piece in pieces)
+                piece.transform.SetAsLastSibling();
         }
 
         public List<ChessMove> GetAllValidMoves(GameSide side)
