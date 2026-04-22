@@ -15,7 +15,7 @@ namespace ChessGame.Game
 
         private MenuView _menuView;
         private GameOverView _gameOverView;
-        private SurrenderView _surrenderView;
+        private ButtonsView _buttonsView;
 
         private PieceFactory _pieceFactory;
         private ChessBoard _board;
@@ -65,11 +65,11 @@ namespace ChessGame.Game
                 if (views.Length > 0) _gameOverView = views[0];
                 // GameOverView resolved
             }
-            if (_surrenderView == null)
+            if (_buttonsView == null)
             {
-                var views = Resources.FindObjectsOfTypeAll<SurrenderView>();
-                if (views.Length > 0) _surrenderView = views[0];
-                // SurrenderView resolved
+                var views = Resources.FindObjectsOfTypeAll<ButtonsView>();
+                if (views.Length > 0) _buttonsView = views[0];
+                // ButtonsView resolved
             }
         }
 
@@ -110,8 +110,11 @@ namespace ChessGame.Game
                 _menuView.OnStartClicked += StartGame;
                 _menuView.OnQuitClicked += QuitGame;
             }
-            if (_surrenderView != null)
-                _surrenderView.OnSurrenderClicked += Surrender;
+            if (_buttonsView != null)
+            {
+                _buttonsView.OnRegretClicked += RegretMove;
+                _buttonsView.OnSurrenderClicked += Surrender;
+            }
             if (_gameOverView != null)
             {
                 _gameOverView.OnRestartClicked += ReturnToMenu;
@@ -123,14 +126,14 @@ namespace ChessGame.Game
         {
             if (_menuView != null) _menuView.Show();
             if (_gameOverView != null) _gameOverView.Hide();
-            if (_surrenderView != null) _surrenderView.Hide();
+            if (_buttonsView != null) _buttonsView.Hide();
         }
 
         private void StartGame(AIDifficulty difficulty)
         {
             _aiOpponent.SetDifficulty(difficulty);
             if (_menuView != null) _menuView.Hide();
-            if (_surrenderView != null) _surrenderView.Show();
+            if (_buttonsView != null) _buttonsView.Show();
             _board.SpawnAllPieces();
 
             CurrentTurn = GameSide.Red;
@@ -146,6 +149,35 @@ namespace ChessGame.Game
             CheckGameOver();
             if (!GameOver)
                 _aiOpponent.RequestMove(this);
+        }
+
+        public void RegretMove()
+        {
+            if (GameOver || _board == null || !_board.CanUndo) return;
+
+            // Prevent regret while AI is thinking
+            if (_aiOpponent != null && _aiOpponent.IsThinking) return;
+
+            // Undo the most recent move (AI's move if it just moved)
+            var record1 = _board.UndoLastMove();
+            if (record1 == null) return;
+
+            // If the undone move was AI's, also undo player's previous move to restore fair state
+            if (record1.MovedPieceSide == GameSide.Black && _board.CanUndo)
+            {
+                var record2 = _board.UndoLastMove();
+                if (record2 != null)
+                {
+                    CurrentTurn = GameSide.Red;
+                }
+            }
+            else if (record1.MovedPieceSide == GameSide.Red)
+            {
+                CurrentTurn = GameSide.Red;
+            }
+
+            _playerInput.InputEnabled = true;
+            _playerInput.Deselect();
         }
 
         public void EndAITurn()
@@ -174,7 +206,7 @@ namespace ChessGame.Game
 
             if (GameOver && winner != null)
             {
-                if (_surrenderView != null) _surrenderView.Hide();
+                if (_buttonsView != null) _buttonsView.Hide();
                 _playerInput.InputEnabled = false;
                 if (_gameOverView != null) _gameOverView.Show($"{winner}获胜！");
             }
@@ -184,7 +216,7 @@ namespace ChessGame.Game
         {
             if (GameOver) return;
             GameOver = true;
-            if (_surrenderView != null) _surrenderView.Hide();
+            if (_buttonsView != null) _buttonsView.Hide();
             _playerInput.InputEnabled = false;
             if (_gameOverView != null) _gameOverView.Show("你认输了！");
         }
@@ -192,7 +224,7 @@ namespace ChessGame.Game
         private void ReturnToMenu()
         {
             if (_gameOverView != null) _gameOverView.Hide();
-            if (_surrenderView != null) _surrenderView.Hide();
+            if (_buttonsView != null) _buttonsView.Hide();
             _board.ClearBoard();
             CurrentTurn = GameSide.Red;
             GameOver = false;

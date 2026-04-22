@@ -10,6 +10,7 @@ namespace ChessGame.Gameplay
         private readonly Piece[,] _pieces = new Piece[9, 10];
         private PieceFactory _pieceFactory;
         private Piece _lastMoved;
+        private readonly List<MoveRecord> _moveHistory = new List<MoveRecord>();
 
         public void Initialize(PieceFactory factory)
         {
@@ -27,6 +28,7 @@ namespace ChessGame.Gameplay
         {
             ClearPieces();
             _lastMoved = null;
+            _moveHistory.Clear();
         }
 
         public void SpawnAllPieces()
@@ -99,10 +101,16 @@ namespace ChessGame.Gameplay
 
         public void MovePiece(Piece piece, int toX, int toY)
         {
-            _pieces[piece.BoardX, piece.BoardY] = null;
+            int fromX = piece.BoardX;
+            int fromY = piece.BoardY;
+            _pieces[fromX, fromY] = null;
             var target = _pieces[toX, toY];
+            PieceType? capturedType = null;
+            GameSide? capturedSide = null;
             if (target != null)
             {
+                capturedType = target.Type;
+                capturedSide = target.Side;
                 target.IsAlive = false;
                 Destroy(target.gameObject);
             }
@@ -112,6 +120,7 @@ namespace ChessGame.Gameplay
             piece.UpdatePosition();
             UpdateMoveBorder(piece);
             SortPieces();
+            _moveHistory.Add(new MoveRecord(piece.Type, piece.Side, fromX, fromY, toX, toY, capturedType, capturedSide));
         }
 
         private void UpdateMoveBorder(Piece piece)
@@ -171,6 +180,55 @@ namespace ChessGame.Gameplay
                         return true;
                 }
             return false;
+        }
+
+        public bool CanUndo => _moveHistory.Count > 0;
+
+        public MoveRecord UndoLastMove()
+        {
+            if (_moveHistory.Count == 0) return null;
+            int idx = _moveHistory.Count - 1;
+            var record = _moveHistory[idx];
+            _moveHistory.RemoveAt(idx);
+
+            // Restore moved piece position
+            var movedPiece = _pieces[record.ToX, record.ToY];
+            if (movedPiece != null)
+            {
+                _pieces[record.ToX, record.ToY] = null;
+                _pieces[record.FromX, record.FromY] = movedPiece;
+                movedPiece.BoardX = record.FromX;
+                movedPiece.BoardY = record.FromY;
+                movedPiece.UpdatePosition();
+            }
+
+            // Restore captured piece if any
+            if (record.CapturedPieceType.HasValue && record.CapturedPieceSide.HasValue)
+            {
+                var captured = _pieceFactory.CreatePiece(record.CapturedPieceType.Value, record.CapturedPieceSide.Value, record.ToX, record.ToY);
+                _pieces[record.ToX, record.ToY] = captured;
+            }
+
+            // Update last moved highlight
+            if (_moveHistory.Count > 0)
+            {
+                var prev = _moveHistory[_moveHistory.Count - 1];
+                var prevPiece = _pieces[prev.ToX, prev.ToY];
+                if (_lastMoved != null && _lastMoved != prevPiece)
+                    _lastMoved.SetMoveBorder(false);
+                _lastMoved = prevPiece;
+                if (_lastMoved != null)
+                    _lastMoved.SetMoveBorder(true);
+            }
+            else
+            {
+                if (_lastMoved != null)
+                    _lastMoved.SetMoveBorder(false);
+                _lastMoved = null;
+            }
+
+            SortPieces();
+            return record;
         }
     }
 }
