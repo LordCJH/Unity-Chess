@@ -6,97 +6,76 @@ namespace ChessGame.UI
 {
     public class GameOverView : MonoBehaviour
     {
-        public event Action OnRestartClicked;
-        public event Action OnMenuClicked;
+        public event Action OnRestartClicked, OnMenuClicked;
 
         private Canvas _canvas;
         private Text _resultText;
+        private Button _restartButton;
+        private Button _menuButton;
+        private bool _awakened;
+
+        private void Awake()
+        {
+            if (_awakened) return;
+            _awakened = true;
+            AutoBind();
+            BindEvents();
+        }
+
+        private void AutoBind()
+        {
+            _canvas = GetComponent<Canvas>();
+
+            var allTexts = GetComponentsInChildren<Text>(true);
+            foreach (var txt in allTexts)
+            {
+                if (txt.gameObject.name == "ResultText")
+                {
+                    _resultText = txt;
+                    break;
+                }
+            }
+
+            var allButtons = GetComponentsInChildren<Button>(true);
+            foreach (var btn in allButtons)
+            {
+                var textComp = btn.GetComponentInChildren<Text>();
+                string text = textComp != null ? textComp.text : "";
+                if (text.Contains("重新开始"))
+                    _restartButton = btn;
+                else if (text.Contains("返回") || text.Contains("菜单"))
+                    _menuButton = btn;
+            }
+        }
+
+        private void BindEvents()
+        {
+            if (_restartButton != null)
+                _restartButton.onClick.AddListener(() => OnRestartClicked?.Invoke());
+
+            if (_menuButton != null)
+                _menuButton.onClick.AddListener(() => OnMenuClicked?.Invoke());
+        }
 
         public void Show(string winnerText)
         {
-            if (_canvas == null) BuildUI();
-            _resultText.text = winnerText;
-            _canvas.gameObject.SetActive(true);
+            // 必须先激活，确保 Awake/AutoBind 已经执行
+            if (!gameObject.activeInHierarchy)
+                gameObject.SetActive(true);
+
+            if (!_awakened)
+                Awake();
+
+            if (_resultText != null)
+                _resultText.text = winnerText;
+
+            if (_canvas != null)
+                _canvas.enabled = true;
         }
 
         public void Hide()
         {
-            if (_canvas != null)
-                _canvas.gameObject.SetActive(false);
-        }
-
-        private void BuildUI()
-        {
-            var canvasGO = new GameObject("GameOverCanvas");
-            _canvas = canvasGO.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 200;
-            canvasGO.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasGO.AddComponent<GraphicRaycaster>();
-
-            // Background
-            var bg = new GameObject("Background");
-            bg.transform.SetParent(canvasGO.transform, false);
-            var bgRect = bg.AddComponent<RectTransform>();
-            bgRect.anchorMin = Vector2.zero;
-            bgRect.anchorMax = Vector2.one;
-            bgRect.offsetMin = Vector2.zero;
-            bgRect.offsetMax = Vector2.zero;
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0, 0, 0, 0.7f);
-
-            // Result text
-            var textGO = new GameObject("ResultText");
-            textGO.transform.SetParent(canvasGO.transform, false);
-            var textRect = textGO.AddComponent<RectTransform>();
-            textRect.anchoredPosition = new Vector2(0, 40);
-            textRect.sizeDelta = new Vector2(500, 80);
-            _resultText = textGO.AddComponent<Text>();
-            _resultText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _resultText.fontSize = 48;
-            _resultText.alignment = TextAnchor.MiddleCenter;
-            _resultText.color = Color.yellow;
-
-            // Restart button
-            var restart = CreateButton(canvasGO.transform, "重新开始", new Vector2(0, -40), new Vector2(160, 50), new Color(0.2f, 0.6f, 0.3f), 22);
-            restart.GetComponent<Button>().onClick.AddListener(() => OnRestartClicked?.Invoke());
-
-            // Menu button
-            var menu = CreateButton(canvasGO.transform, "返回主菜单", new Vector2(0, -110), new Vector2(160, 45), new Color(0.6f, 0.2f, 0.2f), 20);
-            menu.GetComponent<Button>().onClick.AddListener(() => OnMenuClicked?.Invoke());
-
-            canvasGO.SetActive(false);
-        }
-
-        private GameObject CreateButton(Transform parent, string text, Vector2 pos, Vector2 size, Color color, int fontSize)
-        {
-            var go = new GameObject($"Btn_{text}");
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = size;
-            var img = go.AddComponent<Image>();
-            img.color = color;
-            go.AddComponent<Button>();
-            AddText(go, text, fontSize);
-            return go;
-        }
-
-        private void AddText(GameObject parent, string text, int fontSize)
-        {
-            var go = new GameObject("Text");
-            go.transform.SetParent(parent.transform, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            var txt = go.AddComponent<Text>();
-            txt.text = text;
-            txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            txt.fontSize = fontSize;
-            txt.alignment = TextAnchor.MiddleCenter;
-            txt.color = Color.white;
+            gameObject.SetActive(false);
         }
     }
 }

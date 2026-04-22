@@ -5,7 +5,6 @@ using ChessGame.Gameplay;
 using ChessGame.UI;
 using ChessGame.Input;
 using ChessGame.AI;
-using UnityEngine.Rendering;
 
 namespace ChessGame.Game
 {
@@ -14,13 +13,14 @@ namespace ChessGame.Game
     {
         [SerializeField] private RectTransform _boardRect;
 
+        private MenuView _menuView;
+        private GameOverView _gameOverView;
+        private SurrenderView _surrenderView;
+
         private PieceFactory _pieceFactory;
         private ChessBoard _board;
         private PlayerInput _playerInput;
         private AIOpponent _aiOpponent;
-        private MenuView _menuView;
-        private GameOverView _gameOverView;
-        private SurrenderView _surrenderView;
 
         public GameSide CurrentTurn { get; private set; } = GameSide.Red;
         public bool GameOver { get; private set; }
@@ -34,9 +34,6 @@ namespace ChessGame.Game
             _board = gameObject.AddComponent<ChessBoard>();
             _playerInput = gameObject.AddComponent<PlayerInput>();
             _aiOpponent = gameObject.AddComponent<AIOpponent>();
-            _menuView = gameObject.AddComponent<MenuView>();
-            _gameOverView = gameObject.AddComponent<GameOverView>();
-            _surrenderView = gameObject.AddComponent<SurrenderView>();
 
             _boardRect = ResolveBoardRect();
             _pieceFactory.SetBoardRoot(_boardRect);
@@ -44,15 +41,37 @@ namespace ChessGame.Game
 
             _board.Initialize(_pieceFactory);
             _aiOpponent.Initialize(_board);
-
-            _menuView.BuildUI();
-
-            BindEvents();
-
-            ShowMenu();
-            _playerInput.InputEnabled = false;
         }
 
+        void Start()
+        {
+            ResolveViews();
+            BindEvents();
+            ShowMenu();
+            _playerInput.InputEnabled = false;
+
+        }
+
+        private void ResolveViews()
+        {
+            if (_menuView == null)
+            {
+                var go = GameObject.Find("MenuCanvas");
+                if (go != null) _menuView = go.GetComponent<MenuView>();
+            }
+            if (_gameOverView == null)
+            {
+                var views = Resources.FindObjectsOfTypeAll<GameOverView>();
+                if (views.Length > 0) _gameOverView = views[0];
+                // GameOverView resolved
+            }
+            if (_surrenderView == null)
+            {
+                var views = Resources.FindObjectsOfTypeAll<SurrenderView>();
+                if (views.Length > 0) _surrenderView = views[0];
+                // SurrenderView resolved
+            }
+        }
 
         private void SetupCamera()
         {
@@ -67,7 +86,7 @@ namespace ChessGame.Game
 
         private void EnsureEventSystem()
         {
-            if (FindObjectOfType<EventSystem>() == null)
+            if (GameObject.Find("EventSystem") == null)
             {
                 var es = new GameObject("EventSystem");
                 es.AddComponent<EventSystem>();
@@ -86,25 +105,32 @@ namespace ChessGame.Game
 
         private void BindEvents()
         {
-            _menuView.OnStartClicked += StartGame;
-            _menuView.OnQuitClicked += QuitGame;
-            _surrenderView.OnSurrenderClicked += Surrender;
-            _gameOverView.OnRestartClicked += ReturnToMenu;
-            _gameOverView.OnMenuClicked += ReturnToMenu;
+            if (_menuView != null)
+            {
+                _menuView.OnStartClicked += StartGame;
+                _menuView.OnQuitClicked += QuitGame;
+            }
+            if (_surrenderView != null)
+                _surrenderView.OnSurrenderClicked += Surrender;
+            if (_gameOverView != null)
+            {
+                _gameOverView.OnRestartClicked += ReturnToMenu;
+                _gameOverView.OnMenuClicked += ReturnToMenu;
+            }
         }
 
         private void ShowMenu()
         {
-            _menuView.Show();
-            _gameOverView.Hide();
-            _surrenderView.Hide();
+            if (_menuView != null) _menuView.Show();
+            if (_gameOverView != null) _gameOverView.Hide();
+            if (_surrenderView != null) _surrenderView.Hide();
         }
 
         private void StartGame(AIDifficulty difficulty)
         {
             _aiOpponent.SetDifficulty(difficulty);
-            _menuView.Hide();
-            _surrenderView.Show();
+            if (_menuView != null) _menuView.Hide();
+            if (_surrenderView != null) _surrenderView.Show();
             _board.SpawnAllPieces();
 
             CurrentTurn = GameSide.Red;
@@ -148,9 +174,9 @@ namespace ChessGame.Game
 
             if (GameOver && winner != null)
             {
-                _surrenderView.Hide();
+                if (_surrenderView != null) _surrenderView.Hide();
                 _playerInput.InputEnabled = false;
-                _gameOverView.Show($"{winner}获胜！");
+                if (_gameOverView != null) _gameOverView.Show($"{winner}获胜！");
             }
         }
 
@@ -158,15 +184,15 @@ namespace ChessGame.Game
         {
             if (GameOver) return;
             GameOver = true;
-            _surrenderView.Hide();
+            if (_surrenderView != null) _surrenderView.Hide();
             _playerInput.InputEnabled = false;
-            ReturnToMenu();
+            if (_gameOverView != null) _gameOverView.Show("你认输了！");
         }
 
         private void ReturnToMenu()
         {
-            _gameOverView.Hide();
-            _surrenderView.Hide();
+            if (_gameOverView != null) _gameOverView.Hide();
+            if (_surrenderView != null) _surrenderView.Hide();
             _board.ClearBoard();
             CurrentTurn = GameSide.Red;
             GameOver = false;

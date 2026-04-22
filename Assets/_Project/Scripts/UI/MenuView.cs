@@ -12,107 +12,120 @@ namespace ChessGame.UI
         public event Action OnQuitClicked;
 
         private Canvas _canvas;
-        private Button[] _difficultyButtons;
-        private Image[] _difficultyImages;
+        private Button[] _difficultyButtons = new Button[3];
+        private Image[] _difficultyImages = new Image[3];
+        private Button _startButton;
+        private Button _quitButton;
         private int _selectedIndex = 1;
 
         private readonly Color _normalColor = new Color(0.2f, 0.5f, 0.8f);
         private readonly Color _selectedColor = new Color(0.9f, 0.6f, 0.1f);
 
-        public void Show() => _canvas.gameObject.SetActive(true);
-        public void Hide() => _canvas.gameObject.SetActive(false);
-
-        public void BuildUI()
+        private void Awake()
         {
-            var canvasGO = new GameObject("MenuCanvas");
-            _canvas = canvasGO.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 100;
-            canvasGO.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasGO.AddComponent<GraphicRaycaster>();
-
-            var panel = CreatePanel(canvasGO.transform);
-            CreateTitle(panel);
-            CreateDifficultyButtons(panel);
-            CreateStartButton(panel);
-            CreateQuitButton(panel);
+            AutoBind();
+            BindEvents();
             UpdateButtonStyles();
         }
 
-        private GameObject CreatePanel(Transform parent)
+        private void AutoBind()
         {
-            var go = new GameObject("Panel");
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            var img = go.AddComponent<Image>();
-            img.color = new Color(0.1f, 0.1f, 0.1f, 0.85f);
-            return go;
-        }
+            _canvas = GetComponent<Canvas>();
 
-        private void CreateTitle(GameObject panel)
-        {
-            var go = new GameObject("Title");
-            go.transform.SetParent(panel.transform, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchoredPosition = new Vector2(0, 100);
-            rect.sizeDelta = new Vector2(400, 60);
-            var txt = go.AddComponent<Text>();
-            txt.text = "街头象棋对战";
-            txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            txt.fontSize = 32;
-            txt.alignment = TextAnchor.MiddleCenter;
-            txt.color = Color.white;
-        }
+            // Find difficulty buttons in DiffSelGroup
+            var diffGroup = transform.Find("Panel/DiffSelGroup");
+            if (diffGroup != null)
+            {
+                var diffButtons = diffGroup.GetComponentsInChildren<Button>(true);
+                for (int i = 0; i < diffButtons.Length && i < 3; i++)
+                {
+                    _difficultyButtons[i] = diffButtons[i];
+                }
+            }
 
-        private void CreateDifficultyButtons(GameObject panel)
-        {
-            string[] labels = { "路人水准", "高手大爷", "街头棋圣" };
-            _difficultyButtons = new Button[3];
-            _difficultyImages = new Image[3];
+            // Find start/quit buttons in ManBtGroup
+            var manGroup = transform.Find("Panel/ManBtGroup");
+            if (manGroup != null)
+            {
+                foreach (var btn in manGroup.GetComponentsInChildren<Button>(true))
+                {
+                    var textComp = btn.GetComponentInChildren<Text>();
+                    string text = textComp != null ? textComp.text : "";
+                    if (text.Contains("开始"))
+                        _startButton = btn;
+                    else if (text.Contains("离开") || text.Contains("退出"))
+                        _quitButton = btn;
+                }
+            }
+
+            // Fallback: search entire tree if groups not found
+            if (_difficultyButtons[0] == null || _startButton == null)
+            {
+                var allButtons = GetComponentsInChildren<Button>(true);
+                foreach (var btn in allButtons)
+                {
+                    var textComp = btn.GetComponentInChildren<Text>();
+                    if (textComp == null) continue;
+
+                    string text = textComp.text;
+                    if (text.Contains("路人"))
+                        _difficultyButtons[0] = btn;
+                    else if (text.Contains("高手"))
+                        _difficultyButtons[1] = btn;
+                    else if (text.Contains("棋圣"))
+                        _difficultyButtons[2] = btn;
+                    else if (text.Contains("开始"))
+                        _startButton = btn;
+                    else if (text.Contains("离开") || text.Contains("退出"))
+                        _quitButton = btn;
+                }
+            }
 
             for (int i = 0; i < 3; i++)
             {
-                var btnGO = new GameObject($"Btn_{labels[i]}");
-                btnGO.transform.SetParent(panel.transform, false);
-                var rect = btnGO.AddComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2((i - 1) * 120, 20);
-                rect.sizeDelta = new Vector2(100, 45);
-                var img = btnGO.AddComponent<Image>();
-                img.color = _normalColor;
-                var btn = btnGO.AddComponent<Button>();
-                int idx = i;
-                btn.onClick.AddListener(() => SelectDifficulty(idx));
-                AddText(btnGO, labels[i], 20);
-
-                _difficultyButtons[i] = btn;
-                _difficultyImages[i] = img;
+                if (_difficultyButtons[i] != null)
+                    _difficultyImages[i] = _difficultyButtons[i].GetComponent<Image>();
             }
         }
 
-        private void CreateStartButton(GameObject panel)
+        private void BindEvents()
         {
-            var go = CreateButton(panel.transform, "开始对战", new Vector2(0, -60), new Vector2(150, 45), new Color(0.2f, 0.7f, 0.3f), 22);
-            go.GetComponent<Button>().onClick.AddListener(() =>
+            for (int i = 0; i < 3; i++)
             {
-                AIDifficulty diff = _selectedIndex switch
-                {
-                    0 => AIDifficulty.Easy,
-                    1 => AIDifficulty.Normal,
-                    2 => AIDifficulty.Hard,
-                    _ => AIDifficulty.Normal,
-                };
-                OnStartClicked?.Invoke(diff);
-            });
+                int idx = i;
+                if (_difficultyButtons[i] != null)
+                    _difficultyButtons[i].onClick.AddListener(() => SelectDifficulty(idx));
+            }
+
+            if (_startButton != null)
+                _startButton.onClick.AddListener(OnStartButtonClicked);
+
+            if (_quitButton != null)
+                _quitButton.onClick.AddListener(() => OnQuitClicked?.Invoke());
         }
 
-        private void CreateQuitButton(GameObject panel)
+        private void OnStartButtonClicked()
         {
-            var go = CreateButton(panel.transform, "离开棋桌", new Vector2(0, -120), new Vector2(150, 40), new Color(0.7f, 0.2f, 0.2f), 20);
-            go.GetComponent<Button>().onClick.AddListener(() => OnQuitClicked?.Invoke());
+            AIDifficulty diff = _selectedIndex switch
+            {
+                0 => AIDifficulty.Easy,
+                1 => AIDifficulty.Normal,
+                2 => AIDifficulty.Hard,
+                _ => AIDifficulty.Normal,
+            };
+            OnStartClicked?.Invoke(diff);
+        }
+
+        public void Show()
+        {
+            if (_canvas != null)
+                _canvas.gameObject.SetActive(true);
+        }
+
+        public void Hide()
+        {
+            if (_canvas != null)
+                _canvas.gameObject.SetActive(false);
         }
 
         private void SelectDifficulty(int index)
@@ -128,37 +141,6 @@ namespace ChessGame.UI
                 if (_difficultyImages[i] != null)
                     _difficultyImages[i].color = (i == _selectedIndex) ? _selectedColor : _normalColor;
             }
-        }
-
-        private GameObject CreateButton(Transform parent, string text, Vector2 pos, Vector2 size, Color color, int fontSize)
-        {
-            var go = new GameObject($"Btn_{text}");
-            go.transform.SetParent(parent, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = size;
-            var img = go.AddComponent<Image>();
-            img.color = color;
-            go.AddComponent<Button>();
-            AddText(go, text, fontSize);
-            return go;
-        }
-
-        private void AddText(GameObject parent, string text, int fontSize)
-        {
-            var go = new GameObject("Text");
-            go.transform.SetParent(parent.transform, false);
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            var txt = go.AddComponent<Text>();
-            txt.text = text;
-            txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            txt.fontSize = fontSize;
-            txt.alignment = TextAnchor.MiddleCenter;
-            txt.color = Color.white;
         }
     }
 }
